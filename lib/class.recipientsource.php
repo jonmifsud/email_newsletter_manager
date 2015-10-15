@@ -70,6 +70,9 @@ Class RecipientSource extends DataSource{
 			'enm-newsletter-id' => $this->newsletter_id,
 		);
 
+		// var_dump($env[''=>'132'])
+		// var_dump($this->dsParamFILTERS);die;
+
 		$this->_env['param'] = $env;
 		$this->_env['env']['pool'] = $params;
 		$dependencies = array();

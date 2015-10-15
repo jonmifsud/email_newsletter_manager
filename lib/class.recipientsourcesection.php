@@ -14,6 +14,12 @@ Class RecipientSourceSection extends RecipientSource{
 	public $dsParamPAGINATERESULTS = 'yes';
 	public $dsParamSTARTPAGE = 1;
 
+	public function __construct(){
+		require(TOOLKIT . '/util.validators.php');
+		$this->_emailValidator = $validators['email'];
+		parent::__construct();
+	}
+
 	/**
 	 * Fetch generated recipient data.
 	 *
@@ -41,7 +47,6 @@ Class RecipientSourceSection extends RecipientSource{
 			$field_ids[] = FieldManager::fetchFieldIDFromElementName($nameField, $this->getSource());
 		}
 		$email_field_id = FieldManager::fetchFieldIDFromElementName($this->emailField, $this->getSource());
-		require_once(TOOLKIT . '/util.validators.php');
 		foreach((array)$entries['records'] as $entry){
 			$entry_data = $entry->getData();
 			$element = new XMLElement('entry');
@@ -62,7 +67,7 @@ Class RecipientSourceSection extends RecipientSource{
 					'id'	=> $entry->get('id'),
 					'email' => $email,
 					'name'	=> $name,
-					'valid' => @preg_match($validators['email'], $email)?true:false
+					'valid' => @preg_match($this->_emailValidator, $email)?true:false
 				);
 			}
 		}
@@ -167,7 +172,7 @@ Class RecipientSourceSection extends RecipientSource{
 				if(!isset($fieldPool[$field_id]) || !is_object($fieldPool[$field_id]))
 					$fieldPool[$field_id] =& FieldManager::fetch($field_id);
 
-				if($field_id != 'id' && $field_id != 'system:date' && !($fieldPool[$field_id] instanceof Field)){
+				if($field_id != 'id' && $field_id != 'system:id' && $field_id != 'system:date' && !($fieldPool[$field_id] instanceof Field)){
 					throw new Exception(
 						__(
 							'Error creating field object with id %1$d, for filtering in data source "%2$s". Check this field exists.',
@@ -176,8 +181,31 @@ Class RecipientSourceSection extends RecipientSource{
 					);
 				}
 
-				if($field_id == 'id') {
-					$where = " AND `e`.id IN ('".implode("', '", $value)."') ";
+				if ($field_id === 'system:id' || $field_id === 'id') {
+					$c = 'IN';
+
+					if (stripos($value[0], 'not:') === 0) {
+						$value[0] = preg_replace('/^not:\s*/', null, $value[0]);
+						$c = 'NOT IN';
+					}
+
+					// Cast all ID's to integers. (RE: #2191)
+					$value = array_map('General::intval', $value);
+					$count = array_sum($value);
+					$value = array_filter($value);
+
+					// If the ID was cast to 0, then we need to filter on 'id' = 0,
+					// which will of course return no results, but without it the
+					// Datasource will return ALL results, which is not the
+					// desired behaviour. RE: #1619
+					if ($count === 0) {
+						$value[] = 0;
+					}
+
+					// If there are no ID's, no need to filter. RE: #1567
+					if (!empty($value)) {
+						$where .= " AND `e`.id " . $c . " (".implode(", ", $value).") ";
+					}
 				}
 				else if($field_id == 'system:date') {
 					require_once(TOOLKIT . '/fields/field.date.php');
