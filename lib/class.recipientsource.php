@@ -50,7 +50,11 @@ Class RecipientSource extends DataSource{
 		);
 	}
 
-	public function processDependencies(array $params = array()) {
+	public function processDependencies(array $params = array()) {	
+		if ($this->originalDsParamFILTERS){
+			$this->dsParamFILTERS = $this->originalDsParamFILTERS;
+		}
+
 		$datasources = $this->getDependencies();
 
 		if(!is_array($datasources) || empty($datasources)){
@@ -69,9 +73,6 @@ Class RecipientSource extends DataSource{
 			'timezone' => DateTimeObj::get('P'),
 			'enm-newsletter-id' => $this->newsletter_id,
 		);
-
-		// var_dump($env[''=>'132'])
-		// var_dump($this->dsParamFILTERS);die;
 
 		$this->_env['param'] = $env;
 		$this->_env['env']['pool'] = $params;
