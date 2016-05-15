@@ -128,6 +128,9 @@ Class contentExtensionemail_newsletter_managersenders extends ExtensionPage{
 					if($gateway['handle'] == 'sendmail'){
 						$gw->setFrom($config['from_address'], $config['from_name']);
 					}
+					if($gateway['handle'] == 'mailjet'){
+						$gw->setFrom($config['from_address'], $config['from_name']);
+					}
 				}
 				$entry = new XMLElement('entry');
 				General::array_to_xml($entry, $gateway);
